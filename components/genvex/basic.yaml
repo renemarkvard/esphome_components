@@ -1,0 +1,53 @@
+external_components:
+  - source: github://renemarkvard/esphome_components@develop
+    refresh: 0s
+  - source: github://esphome/esphome@dev
+    refresh: 0s
+    components: [ modbus, modbus_controller ]
+
+genvex:
+
+sensor:
+  - platform: modbus_controller
+    modbus_controller_id: genvex_modbus_controller
+    name: "Panel temperature"
+    id: genvex_inlet_temp_t2_panel
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    device_class: temperature
+    register_type: read
+    address: 9
+    filters:
+      - lambda: return (x - 300.0) / 10.0;
+
+number:
+  - platform: modbus_controller
+    modbus_controller_id: genvex_modbus_controller
+    name: "Ventilation speed set"
+    id: genvex_ventilation_speed_set
+    min_value: 0
+    max_value: 4
+    step: 1.0
+    address: 100
+    force_new_range: true
+    use_write_multiple: true
+
+  - platform: modbus_controller
+    modbus_controller_id: genvex_modbus_controller
+    name: "Temperature set"
+    id: genvex_target_temperature_set
+    min_value: 10
+    max_value: 30
+    step: 0.1
+    address: 0
+    force_new_range: true
+    use_write_multiple: true
+    write_lambda: "payload = modbus_controller::float_to_payload(x*100, modbus_controller::SensorValueType::U_WORD); return x;"
+    lambda: "return x*0.01;"
+
+climate:
+  - platform: genvex
+    name: Genvex
+    current_temp_sensor_id: genvex_inlet_temp_t2_panel
+    target_temp_sensor_id: genvex_target_temperature_set
+    fan_speed_sensor_id: genvex_ventilation_speed_set
